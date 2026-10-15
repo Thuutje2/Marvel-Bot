@@ -5,6 +5,8 @@ const {
   MessageFlags,
 } = require('discord.js');
 const DailyConfig = require('../../models/DailyConfig');
+// Name of the role that gets pinged with every question (not case sensitive)
+const PING_ROLE_NAME = 'qotd';
 
 const USAGE =
   'Usage:\n' +
@@ -23,6 +25,25 @@ async function postQuestion(guild, { question, optionA, optionB, emojiA, emojiB 
   const channel = await guild.channels.fetch(cfg.channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) {
     return 'The setup channel no longer exists. Run `/setup` again.';
+  }
+
+  // Ping the server's existing @qotd role (found by name)
+  let ping = null;
+  let pingNote = '';
+  const roles = await guild.roles.fetch().catch(() => guild.roles.cache);
+  const qotd = roles.find((r) => r.name.toLowerCase() === PING_ROLE_NAME);
+  const canMentionAny = channel
+    .permissionsFor(guild.members.me)
+    ?.has(PermissionFlagsBits.MentionEveryone);
+
+  if (!qotd) {
+    pingNote = `\nI couldn't find a role named "${PING_ROLE_NAME}", so nobody was pinged.`;
+  } else if (!qotd.mentionable && !canMentionAny) {
+    pingNote =
+      `\nI couldn't ping ${qotd.name}: turn on "Allow anyone to @mention this role" for it, ` +
+      'or give me the Mention Everyone permission.';
+  } else {
+    ping = qotd;
   }
 
   optionA = optionA?.trim() || null;
@@ -63,7 +84,12 @@ async function postQuestion(guild, { question, optionA, optionB, emojiA, emojiB 
 
   let sent;
   try {
-    sent = await channel.send({ embeds: [embed] });
+    sent = await channel.send({
+      content: ping ? `${ping}` : undefined,
+      embeds: [embed],
+      // only ping the configured role, nothing else
+      allowedMentions: ping ? { roles: [ping.id] } : { parse: [] },
+    });
   } catch (error) {
     console.error('Could not post daily question:', error.message);
     return `I couldn't post in ${channel}. Check my permissions there.`;
@@ -71,7 +97,7 @@ async function postQuestion(guild, { question, optionA, optionB, emojiA, emojiB 
 
   // Open question: nothing more to do, people answer in the channel
   if (!isVote) {
-    return `Open question posted in ${channel}.`;
+    return `Open question posted in ${channel}.${pingNote}`;
   }
 
   const failed = [];
@@ -86,10 +112,11 @@ async function postQuestion(guild, { question, optionA, optionB, emojiA, emojiB 
   if (failed.length > 0) {
     return (
       `Posted in ${channel}, but I couldn't react with ${failed.join(' and ')}. ` +
-      'Use a normal emoji or one from this server.'
+      'Use a normal emoji or one from this server.' +
+      pingNote
     );
   }
-  return `Question posted in ${channel}.`;
+  return `Question posted in ${channel}.${pingNote}`;
 }
 
 module.exports = {

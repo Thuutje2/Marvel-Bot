@@ -6,10 +6,11 @@ const {
 } = require('discord.js');
 const DailyConfig = require('../../models/DailyConfig');
 
+const TEXT_CHANNEL_TYPES = [ChannelType.GuildText, ChannelType.GuildAnnouncement];
+
 // Shared logic for both /setup and !setup. Returns the reply text.
 async function saveChannel(guild, channel) {
-  const allowed = [ChannelType.GuildText, ChannelType.GuildAnnouncement];
-  if (!channel || !allowed.includes(channel.type)) {
+  if (!channel || !TEXT_CHANNEL_TYPES.includes(channel.type)) {
     return 'Please choose a text channel.';
   }
 
@@ -52,7 +53,7 @@ module.exports = {
       o
         .setName('channel')
         .setDescription('Channel for the daily questions')
-        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+        .addChannelTypes(...TEXT_CHANNEL_TYPES)
         .setRequired(true)
     ),
 
@@ -61,7 +62,7 @@ module.exports = {
     if (!message.guild) return;
 
     if (!message.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-      return message.reply("You need the Manage Server permission to use this.");
+      return message.reply('You need the Manage Server permission to use this.');
     }
 
     const channel =
