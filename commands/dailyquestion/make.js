@@ -4,7 +4,8 @@ const {
   EmbedBuilder,
   MessageFlags,
 } = require('discord.js');
-const DailyConfig = require('../../models/DailyConfig');
+const dailyConfig = require('../../models/daily_config');
+
 // Name of the role that gets pinged with every question (not case sensitive)
 const PING_ROLE_NAME = 'qotd';
 
@@ -17,7 +18,7 @@ const USAGE =
 // Shared logic for /make question and !make question. Returns the reply text.
 // Without optionA/optionB it posts an open question.
 async function postQuestion(guild, { question, optionA, optionB, emojiA, emojiB }, askedBy) {
-  const cfg = await DailyConfig.findOne({ guildId: guild.id });
+  const cfg = await dailyConfig.get(guild.id);
   if (!cfg || !cfg.channelId) {
     return 'No channel set yet. Use `/setup` first.';
   }

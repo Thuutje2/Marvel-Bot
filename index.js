@@ -1,5 +1,5 @@
 require('dotenv').config();
-const connectToDatabase = require('./mongo');
+const connectToDatabase = require('./database');
 connectToDatabase();
 
 const { Client, GatewayIntentBits, Collection } = require('discord.js');

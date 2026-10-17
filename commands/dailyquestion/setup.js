@@ -4,7 +4,7 @@ const {
   ChannelType,
   MessageFlags,
 } = require('discord.js');
-const DailyConfig = require('../../models/DailyConfig');
+const dailyConfig = require('../../models/daily_config');
 
 const TEXT_CHANNEL_TYPES = [ChannelType.GuildText, ChannelType.GuildAnnouncement];
 
@@ -29,11 +29,7 @@ async function saveChannel(guild, channel) {
     return `I'm missing these permissions in ${channel}: ${missing.join(', ')}.`;
   }
 
-  await DailyConfig.findOneAndUpdate(
-    { guildId: guild.id },
-    { channelId: channel.id },
-    { upsert: true }
-  );
+  await dailyConfig.setChannel(guild.id, channel.id);
 
   return `Daily questions will now be posted in ${channel}. Use \`/make question\` to post one.`;
 }
